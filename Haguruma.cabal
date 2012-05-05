@@ -1,0 +1,25 @@
+name:                Haguruma
+version:             0.1.0.0
+-- synopsis:            
+-- description:         
+license:             BSD3
+license-file:        LICENSE
+author:              Yuta Taniguchi
+maintainer:          yuta.taniguchi.y.t@gmail.com
+-- copyright:           
+category:            Development
+build-type:          Simple
+cabal-version:       >=1.8
+
+library
+  exposed-modules:     Haguruma
+  -- other-modules:       
+  build-depends:       base == 4.5.*, containers == 0.4.*, directory == 1.1.*
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  main-is:             HagurumaTest.hs
+  build-depends:       base == 4.5.*, containers == 0.4.*, directory == 1.1.*,
+                       QuickCheck, HUnit,
+                       test-framework-quickcheck2, test-framework-hunit,
+                       test-framework
