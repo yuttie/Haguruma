@@ -8,7 +8,8 @@ module Haguruma (
   , defaultMain
   ) where
 
-import Control.Monad (filterM, liftM, ap)
+import Control.Applicative ((<$>))
+import Control.Monad (filterM, liftM)
 import Data.List (intercalate)
 import Data.Maybe
 import qualified Data.Map as Map
@@ -63,7 +64,7 @@ dependencyList steps = map (\s -> (s, directDeps s)) steps
     directDeps s = map (flip findProducer steps) $ inputs s
 
 dependencyList' :: [Step] -> IO (DepList Step)
-dependencyList' steps = return zip `ap` return steps `ap` mapM directDeps steps
+dependencyList' steps = zip steps <$> mapM directDeps steps
   where
     directDeps s = liftM (map $ flip findProducer steps) $ filterM doesNotExist $ inputs s
     doesNotExist fp | last fp == '/' = doesDirectoryExist fp
