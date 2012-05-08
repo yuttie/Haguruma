@@ -1,6 +1,6 @@
 module Haguruma (
     Step(..)
-  , DepList(..)
+  , DepList
   , schedule
   , dependencyList
   , dependencyList'
