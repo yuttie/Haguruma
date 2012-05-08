@@ -2,6 +2,7 @@ module Haguruma (
     Step(..)
   , DepList
   , schedule
+  , doesProductExist
   , dependencyList
   , dependencyList'
   , perform
@@ -58,6 +59,10 @@ findProducer i ss = case Map.lookup i productProducerMap of
   where
     productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty ss
 
+doesProductExist :: FilePath -> IO Bool
+doesProductExist fp | last fp == '/' = doesDirectoryExist fp
+                    | otherwise      = doesFileExist fp
+
 dependencyList :: [Step] -> DepList Step
 dependencyList steps = map (\s -> (s, directDeps s)) steps
   where
@@ -66,9 +71,7 @@ dependencyList steps = map (\s -> (s, directDeps s)) steps
 dependencyList' :: [Step] -> IO (DepList Step)
 dependencyList' steps = zip steps <$> mapM directDeps steps
   where
-    directDeps s = liftM (map $ flip findProducer steps) $ filterM doesNotExist $ inputs s
-    doesNotExist fp | last fp == '/' = not <$> doesDirectoryExist fp
-                    | otherwise      = not <$> doesFileExist fp
+    directDeps s = liftM (map $ flip findProducer steps) $ filterM (liftM not . doesProductExist) $ inputs s
 
 perform :: Step -> IO ()
 perform s = do
