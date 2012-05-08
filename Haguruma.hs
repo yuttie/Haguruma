@@ -50,25 +50,24 @@ schedule dl ss = let (sorted, _) = foldl (visit []) ([], []) ss
                                (sorted', visited') = foldl (visit $ s:stk) (sorted, s:visited) deps
                            in  (s:sorted', visited')
 
+findProducer :: FilePath -> [Step] -> Step
+findProducer i ss = case Map.lookup i productProducerMap of
+                      Just p  -> p
+                      Nothing -> error $ "No producer of \"" ++ i ++ "\" found."
+  where
+    productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty ss
+
 dependencyList :: [Step] -> DepList Step
 dependencyList steps = map (\s -> (s, directDeps s)) steps
   where
-    directDeps s = map producer $ inputs s
-    producer i = case Map.lookup i productProducerMap of
-                   Just p  -> p
-                   Nothing -> error $ "No producer of \"" ++ i ++ "\" found."
-    productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty steps
+    directDeps s = map (flip findProducer steps) $ inputs s
 
 dependencyList' :: [Step] -> IO (DepList Step)
 dependencyList' steps = return zip `ap` return steps `ap` mapM directDeps steps
   where
-    directDeps s = liftM (map producer) $ filterM doesNotExist $ inputs s
+    directDeps s = liftM (map $ flip findProducer steps) $ filterM doesNotExist $ inputs s
     doesNotExist fp | last fp == '/' = doesDirectoryExist fp
                     | otherwise      = doesFileExist fp
-    producer i = case Map.lookup i productProducerMap of
-                   Just p  -> p
-                   Nothing -> error $ "No producer of \"" ++ i ++ "\" found."
-    productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty steps
 
 perform :: Step -> IO ()
 perform s = do
