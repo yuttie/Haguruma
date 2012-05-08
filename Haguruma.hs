@@ -3,15 +3,16 @@ module Haguruma (
   , DepList(..)
   , schedule
   , dependencyList
+  , dependencyList'
   , perform
   , defaultMain
   ) where
 
-import Control.Monad (liftM)
+import Control.Monad (filterM, liftM, ap)
 import Data.List (intercalate)
 import Data.Maybe
 import qualified Data.Map as Map
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, doesDirectoryExist)
 
 
 data Step = Step { name    :: String
@@ -53,6 +54,17 @@ dependencyList :: [Step] -> DepList Step
 dependencyList steps = map (\s -> (s, directDeps s)) steps
   where
     directDeps s = map producer $ inputs s
+    producer i = case Map.lookup i productProducerMap of
+                   Just p  -> p
+                   Nothing -> error $ "No producer of \"" ++ i ++ "\" found."
+    productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty steps
+
+dependencyList' :: [Step] -> IO (DepList Step)
+dependencyList' steps = return zip `ap` return steps `ap` mapM directDeps steps
+  where
+    directDeps s = liftM (map producer) $ filterM doesNotExist $ inputs s
+    doesNotExist fp | last fp == '/' = doesDirectoryExist fp
+                    | otherwise      = doesFileExist fp
     producer i = case Map.lookup i productProducerMap of
                    Just p  -> p
                    Nothing -> error $ "No producer of \"" ++ i ++ "\" found."
