@@ -67,8 +67,8 @@ dependencyList' :: [Step] -> IO (DepList Step)
 dependencyList' steps = zip steps <$> mapM directDeps steps
   where
     directDeps s = liftM (map $ flip findProducer steps) $ filterM doesNotExist $ inputs s
-    doesNotExist fp | last fp == '/' = doesDirectoryExist fp
-                    | otherwise      = doesFileExist fp
+    doesNotExist fp | last fp == '/' = not <$> doesDirectoryExist fp
+                    | otherwise      = not <$> doesFileExist fp
 
 perform :: Step -> IO ()
 perform s = do
