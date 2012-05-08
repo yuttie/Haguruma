@@ -14,12 +14,14 @@ cabal-version:       >=1.8
 library
   exposed-modules:     Haguruma
   -- other-modules:       
-  build-depends:       base == 4.5.*, containers == 0.4.*, directory == 1.1.*
+  build-depends:       base == 4.5.*, containers == 0.4.*, directory == 1.1.*,
+                       filepath >= 1.0 && < 1.4
 
 test-suite test
   type:                exitcode-stdio-1.0
   main-is:             HagurumaTest.hs
   build-depends:       base == 4.5.*, containers == 0.4.*, directory == 1.1.*,
+                       filepath >= 1.0 && < 1.4,
                        QuickCheck, HUnit,
                        test-framework-quickcheck2, test-framework-hunit,
                        test-framework

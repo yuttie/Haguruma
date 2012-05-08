@@ -15,6 +15,7 @@ import Data.List (intercalate)
 import Data.Maybe
 import qualified Data.Map as Map
 import System.Directory (doesFileExist, doesDirectoryExist)
+import System.FilePath (hasTrailingPathSeparator)
 
 
 data Step = Step { name    :: String
@@ -60,8 +61,9 @@ findProducer i ss = case Map.lookup i productProducerMap of
     productProducerMap = foldl (\m s -> foldl (\m' p -> Map.insert p s m') m $ outputs s) Map.empty ss
 
 doesProductExist :: FilePath -> IO Bool
-doesProductExist fp | last fp == '/' = doesDirectoryExist fp
-                    | otherwise      = doesFileExist fp
+doesProductExist fp
+  | hasTrailingPathSeparator fp = doesDirectoryExist fp
+  | otherwise                   = doesFileExist fp
 
 dependencyList :: [Step] -> DepList Step
 dependencyList steps = map (\s -> (s, directDeps s)) steps
