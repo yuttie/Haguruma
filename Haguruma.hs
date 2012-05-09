@@ -1,11 +1,15 @@
 module Haguruma (
+  -- * Step
     Step(..)
+  , perform
+  -- * Dependency list
   , DepList
-  , schedule
-  , doesProductExist
   , dependencyList
   , dependencyList'
-  , perform
+  -- * Scheduler
+  , schedule
+  -- Utility
+  , doesProductExist
   , defaultMain
   ) where
 
@@ -32,7 +36,25 @@ instance Eq Step where
 instance Show Step where
   show s = "Step " ++ show (name s)
 
+perform :: Step -> IO ()
+perform s = do
+  ok <- liftM and $ mapM doesFileExist $ outputs s
+  if ok
+    then do putStrLn $ "Skipping a step \"" ++ name s ++ "\"..."
+    else do putStrLn $ "Executing a step \"" ++ name s ++ "\"..."
+            action s
+
 type DepList a = [(a, [a])]
+
+dependencyList :: [Step] -> DepList Step
+dependencyList steps = map (\s -> (s, directDeps s)) steps
+  where
+    directDeps s = map (flip findProducer steps) $ inputs s
+
+dependencyList' :: [Step] -> IO (DepList Step)
+dependencyList' steps = zip steps <$> mapM directDeps steps
+  where
+    directDeps s = liftM (map $ flip findProducer steps) $ filterM (liftM not . doesProductExist) $ inputs s
 
 -- | 'schedule dl ss' finds deep dependencies of given steps 'ss' by using a
 -- dependency list 'dl', and returns the all steps in topological order.
@@ -64,24 +86,6 @@ doesProductExist :: FilePath -> IO Bool
 doesProductExist fp
   | hasTrailingPathSeparator fp = doesDirectoryExist fp
   | otherwise                   = doesFileExist fp
-
-dependencyList :: [Step] -> DepList Step
-dependencyList steps = map (\s -> (s, directDeps s)) steps
-  where
-    directDeps s = map (flip findProducer steps) $ inputs s
-
-dependencyList' :: [Step] -> IO (DepList Step)
-dependencyList' steps = zip steps <$> mapM directDeps steps
-  where
-    directDeps s = liftM (map $ flip findProducer steps) $ filterM (liftM not . doesProductExist) $ inputs s
-
-perform :: Step -> IO ()
-perform s = do
-  ok <- liftM and $ mapM doesFileExist $ outputs s
-  if ok
-    then do putStrLn $ "Skipping a step \"" ++ name s ++ "\"..."
-    else do putStrLn $ "Executing a step \"" ++ name s ++ "\"..."
-            action s
 
 defaultMain :: [Step] -> [Step] -> IO ()
 defaultMain steps targets = mapM_ perform $ schedule (dependencyList steps) targets
